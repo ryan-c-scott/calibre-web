@@ -92,16 +92,19 @@ var reader;
                 }
 
                 progressDiv.textContent=`${percentageSection}% (${percentageBook}% in book)`;
+
+                // Auto-bookmark new location if it's past the current bookmark
                 let cfi = location.start.cfi;
                 if(cfi) {
-                    // Auto-bookmark new location if it's past the current bookmark
-                    const bookmarkedCfi = reader.settings.bookmarks.find(bookmark => bookmark < cfi);
+                    const currentCfi = new ePub.CFI(cfi);
+                    const bookmarkedCfi = reader.settings.bookmarks.find((bookmark) => {
+                        return currentCfi.compare(cfi, bookmark) == 1;
+                    });
                     if(bookmarkedCfi) {
-                        // Clear reader bookmarks
+                        // Clear reader and DOM bookmarks
                         reader.clearBookmarks();
-                        // Clear DOM bookmark elements
                         let bookmarkDiv = document.getElementById("bookmarks").innerHTML = "";
-                        // Add the current location as the bookmark
+                        // Add the current location as bookmark
                         reader.addBookmark(cfi);
                     }
                 }
