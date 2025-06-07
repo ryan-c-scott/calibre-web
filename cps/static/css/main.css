@@ -828,7 +828,7 @@ input:-moz-placeholder { color: #454545; }
 
 #progress{
     right: 4rem;
-    bottom: 4rem;
     width: fit-content;
     position: absolute;
+    font-size: smaller;
 }
