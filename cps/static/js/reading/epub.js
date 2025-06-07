@@ -72,6 +72,19 @@ var reader;
             reader.rendition.on('relocated', (location)=>{
                 let percentage = Math.round(location.end.percentage*100);
                 progressDiv.textContent=percentage+"%";
+                let cfi = location.start.cfi;
+                if(cfi) {
+                    // Auto-bookmark new location if it's past the current bookmark
+                    const bookmarkedCfi = reader.settings.bookmarks.find(bookmark => bookmark < cfi);
+                    if(bookmarkedCfi) {
+                        // Clear reader bookmarks
+                        reader.clearBookmarks();
+                        // Clear DOM bookmark elements
+                        let bookmarkDiv = document.getElementById("bookmarks").innerHTML = "";
+                        // Add the current location as the bookmark
+                        reader.addBookmark(cfi);
+                    }
+                }
             });
             reader.rendition.reportLocation();
             progressDiv.style.visibility = "visible";
