@@ -1,0 +1,19 @@
+services:
+  calibre:
+    build: .
+    image: rcscott/calibre-web
+    volumes:
+      - ./library:/books
+      - ./config:/config
+      - ./:/app/calibre-web
+    environment:
+      - TZ=America/Los_Angeles
+      - PUID=1000
+      - PGID=1000
+
+  mitm:
+    image: mitmproxy/mitmproxy
+    command: mitmweb --mode reverse:http://calibre:8083 --web-host 0.0.0.0 --set web_password=mitm
+    ports:
+      - 8080:8080
+      - 8081:8081
