@@ -103,9 +103,13 @@ var reader;
                     if(bookmarkedCfi) {
                         // Clear reader and DOM bookmarks
                         reader.clearBookmarks();
-                        let bookmarkDiv = document.getElementById("bookmarks").innerHTML = "";
+                        $("#bookmarks").empty();
                         // Add the current location as bookmark
                         reader.addBookmark(cfi);
+                        // Fixup the bookmark icon state
+                        const bookmarkIcon = $("#title-controls #bookmark");
+                        bookmarkIcon.removeClass("icon-bookmark-empty");
+                        bookmarkIcon.addClass("icon-bookmark");
                     }
                 }
             });
