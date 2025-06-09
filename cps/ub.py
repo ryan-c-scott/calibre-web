@@ -432,6 +432,25 @@ class Bookmark(Base):
     bookmark_key = Column(String)
 
 
+class Annotation(Base):
+    __tablename__ = 'annotations'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    book_id = Column(Integer)
+    format = Column(String(collation='NOCASE'))
+    annot_id = Column(String)
+    annot_type = Column(String)
+    annot_data = Column(String)
+
+    def to_dict(self):
+        return {
+            'id': self.annot_id,
+            'type': self.annot_type,
+            'data': self.annot_data,
+        }
+
+
 # Baseclass representing books that are archived on the user's Kobo device.
 class ArchivedBook(Base):
     __tablename__ = 'archived_book'

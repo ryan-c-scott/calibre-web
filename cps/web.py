@@ -174,6 +174,38 @@ def set_bookmark(book_id, book_format):
     return "", 201
 
 
+@web.route("/ajax/annotation/<int:book_id>/<book_format>", methods=['POST'])
+@user_login_required
+def set_annotation(book_id, book_format):
+    action = request.form["action"]
+    annotationId = request.form["id"]
+    annotationType = request.form["type"]
+    annotationRange = request.form["range"]
+
+    # Delete the original
+    ub.session.query(ub.Annotation).filter(and_(ub.Annotation.user_id == int(current_user.id),
+                                                ub.Annotation.book_id == book_id,
+                                                ub.Annotation.format == book_format,
+                                                ub.Annotation.annot_id == annotationId)).delete()
+    ub.session_commit()
+    
+
+    if action == "remove":
+        return "", 201
+
+    # Add/Update annotation
+    l_annotation = ub.Annotation(user_id=current_user.id,
+                                 book_id=book_id,
+                                 format=book_format,
+                                 annot_id=annotationId,
+                                 annot_type=annotationType,
+                                 annot_data=annotationRange)
+    ub.session.merge(l_annotation)
+    ub.session_commit("Annotation for user {} in book {} created".format(current_user.id, book_id))
+
+    return "", 201
+
+
 @web.route("/ajax/toggleread/<int:book_id>", methods=['POST'])
 @user_login_required
 def toggle_read(book_id):
@@ -1586,10 +1618,17 @@ def read_book(book_id, book_format):
         bookmark = ub.session.query(ub.Bookmark).filter(and_(ub.Bookmark.user_id == int(current_user.id),
                                                              ub.Bookmark.book_id == book_id,
                                                              ub.Bookmark.format == book_format.upper())).first()
+    annotations = None
+    if current_user.is_authenticated:
+        annotationsData = ub.session.query(ub.Annotation).filter(and_(ub.Annotation.user_id == int(current_user.id),
+                                                             ub.Annotation.book_id == book_id,
+                                                             ub.Annotation.format == book_format.upper())).all()
+        annotations = [a.to_dict() for a in annotationsData]
+
     if book_format.lower() == "epub" or book_format.lower() == "kepub":
         log.debug("Start [k]epub reader for %d", book_id)
         return render_title_template('read.html', bookid=book_id, title=book.title, bookmark=bookmark,
-                                     book_format=book_format)
+                                     book_format=book_format, annotations=annotations)
     elif book_format.lower() == "pdf":
         log.debug("Start pdf reader for %d", book_id)
         return render_title_template('readpdf.html', pdffile=book_id, title=book.title)

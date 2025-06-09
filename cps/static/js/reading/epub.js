@@ -10,7 +10,8 @@ var reader;
 
     reader = ePubReader(calibre.bookUrl, {
         restore: true,
-        bookmarks: calibre.bookmark ? [calibre.bookmark] : []
+        bookmarks: calibre.bookmark ? [calibre.bookmark] : [],
+        annotations: calibre.annotations ? calibre.annotations : [],
     });
 
     Object.keys(themes).forEach(function (theme) {
@@ -69,6 +70,30 @@ var reader;
             };
         }
         make_locations.then(()=>{
+            // FIXME: Annotations are appearing to be off by an inconsistent amount on reload
+            // .It's likely that other bits of data are necessary to properly represent the range
+            // .Although it could also be a visual error in the epub reader itself given that it seems to be off by a vertical line of text exactly
+            reader.settings.annotations.forEach((a) => {
+                const id = a.id;
+                const cfiRange = a.data;
+
+                reader.rendition.annotations.highlight(cfiRange, {id: id}, (e) => {
+                    reader.rendition.annotations.remove(cfiRange, "highlight");
+                    updateAnnotation(id, "remove", "highlight", cfiRange);
+                });
+            });
+
+            reader.rendition.on("selected", function(cfiRange, contents) {
+                const id = EPUBJS.core.uuid();
+                reader.rendition.annotations.highlight(cfiRange, {id: id}, (e) => {
+                    reader.rendition.annotations.remove(cfiRange, "highlight");
+                    updateAnnotation(id, "remove", "highlight", cfiRange);
+                });
+
+                updateAnnotation(id, "add", "highlight", cfiRange);
+                contents.window.getSelection().removeAllRanges();
+            });
+
             reader.rendition.on('relocated', (location)=>{
                 const spineItem = reader.book.spine.get(location.start.index);
                 const baseCfi = spineItem.cfiBase;
@@ -144,6 +169,24 @@ var reader;
         });
     }
     
+    function updateAnnotation(id, action, annotationType, cfiRange, note) {
+        var csrftoken = $("input[name='csrf_token']").val();
+
+        // Save to database
+        $.ajax(calibre.annotationUrl, {
+            method: "post",
+            data: {
+                id: id,
+                action: action,
+                type: annotationType,
+                range: cfiRange,
+            },
+            headers: { "X-CSRFToken": csrftoken }
+        }).fail(function (xhr, status, error) {
+            alert(error);
+        });
+    }
+
     // Default settings load
     const theme = localStorage.getItem("calibre.reader.theme") ?? "lightTheme";
     selectTheme(theme);
